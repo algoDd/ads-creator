@@ -60,6 +60,13 @@ Below are thumbnails of generated assets included in `examples/generated_ads/` â
 
 [![Calendar Event](examples/calendar_event/image.png)](<examples/generated_ads/sample%20(1).png>)
 
+Generated Assets:
+
+<video controls width="640" poster="examples/generated_ads/image.png">
+  <source src="examples/generated_ads/stitched.mp4" type="video/mp4">
+  Your browser does not support the video tag. Download the video: [stitched.mp4](examples/generated_ads/stitched.mp4)
+</video>
+
 [![Sample 1](<examples/generated_ads/sample%20(1).png>)](<examples/generated_ads/sample%20(1).png>)
 
 [![Sample 2](<examples/generated_ads/sample%20(2).png>)](<examples/generated_ads/sample%20(2).png>)
