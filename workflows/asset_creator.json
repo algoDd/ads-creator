@@ -1,0 +1,1175 @@
+{
+  "name": "asset_creator",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "calendarId": {
+          "__rl": true,
+          "value": "techberlin.assetcreator@gmail.com",
+          "mode": "list",
+          "cachedResultName": "techberlin.assetcreator@gmail.com"
+        },
+        "triggerOn": "eventStarted",
+        "options": {
+          "matchTerm": "="
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTrigger",
+      "typeVersion": 1,
+      "position": [
+        32,
+        -624
+      ],
+      "id": "cb7fe0d6-dac0-45ad-ba14-81bd85dcd70e",
+      "name": "Google Calendar Trigger",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "fRFM6WlZuebfT2Uo",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a Marketing Planner for a global brand. Your job is to plan creative assets for an upcoming event while ensuring: \n- Inclusivity & Cultural Sensitivity (ads must feature diverse, non-stereotypical representations, adaptable across regions).\n- Brand Alignment (tone, visuals, and copy must reflect the brand’s trusted, modern, and engaging identity).\n- Target Audience Fit (campaign should be tailored for a global but digitally savvy audience: Gen Z and Millennials who shop online and value deals).\n- Ads design high level: Also decide the ads how it should look like. Make sure they look super nice and creative.\n\nEvent details:\nTitle: {{ $json.summary }}\nDescription: {{ $json.description }}\n\nYou manage 3 creative directors:\n\nYou manage 3 creative directors. For each, provide clear, platform-specific instructions:\n- Graphic Designer → produces static and motion social media ads (Instagram, TikTok, Facebook, banners). Assets should be fun, bold, dynamic, and conversion-driven.\n-Video Creator → produces short-form video ads (TikTok/Reels, YouTube Shorts) with engaging hooks in the first 3 seconds, designed for urgency + shareability.\n-SEO Specialist → crafts copy for ad captions, headlines, and supporting blog/landing text optimized for global reach and organic search, while staying punchy and brand-consistent.\n\nThe information should be sent as part of json in the format: {\n\"graphicCreator\": \"<instructions>\",\n\"seoCreator\": \"<instructions>\",\n\"videoCreator\": \"<instructions>\"\n}\n\nSend the response as a json"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        256,
+        -624
+      ],
+      "id": "be5d7f42-f925-4351-b510-534852c6825f",
+      "name": "Generate Tasks",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZvZ6tKMeNdujT189",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json[\"content\"][\"parts\"][0][\"text\"];\n\n// Remove code block markers ```json ... ```\nconst clean = response.replace(/```json|```/g, \"\");\n\n// Parse the JSON\nconst parsed = JSON.parse(clean);\n\nreturn [\n  { text: parsed.graphicCreator },\n  { text: parsed.seoCreator },\n  { text: parsed.videoCreator }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        608,
+        -624
+      ],
+      "id": "4f685ddc-cc3e-4b6e-a6bd-07699e58b403",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        832,
+        -624
+      ],
+      "id": "c52cf3b7-7d5c-4376-ab64-3b39788e46f3",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Google Calendar Trigger').item.json.organizer.email }}",
+        "subject": "Your marketing campaign is ready ",
+        "message": "={{ $json.html }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        5392,
+        -960
+      ],
+      "id": "7ea3dbde-7e3f-4c5a-86aa-f6afd101499a",
+      "name": "Send a message",
+      "webhookId": "edc720a4-18ee-45ac-adc1-3ad05b392953",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "2MHRRz1SJD3CZ8GC",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-1.5-pro-latest",
+          "mode": "list",
+          "cachedResultName": "models/gemini-1.5-pro-latest"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=The task is {{ $('Split Out').item.json.text }}\n\nGenerate only the list of hashtags that are needed for the event. Send them as a list of array"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        4816,
+        -960
+      ],
+      "id": "68f6f5ba-3632-4474-9265-220080da76d7",
+      "name": "SEO Manager",
+      "executeOnce": true,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZvZ6tKMeNdujT189",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst item = $input.first();\n\n// --- Image / Video from \"Get Result\" node ---\nconst result = $('Get Result').first().json?.result || {};\nconst toUrl = v => (typeof v === 'string' ? v : (v?.url || v?.src || ''));\nconst imageUrl = toUrl(result.sample);        // same key you used\nconst videoUrl = toUrl(result.video);         // change if your key is different\nconst posterUrl = toUrl(result.poster) || imageUrl;\n\n// 1) Get the payload safely\nlet payload = items?.[0]?.json?.content?.parts?.[0]?.text ?? '(No content found)';\n\n// 2) Normalize to an array of hashtags\nlet tags;\nif (Array.isArray(payload)) {\n  tags = payload;\n} else if (typeof payload === 'string') {\n  // Try to parse [\"#Tag\", \"#Tag2\"] shape\n  try {\n    const parsed = JSON.parse(payload);\n    tags = Array.isArray(parsed) ? parsed : payload.split(/[\\s,]+/);\n  } catch {\n    // Fallback: split a plain string \"#a #b, #c\"\n    tags = payload.split(/[\\s,]+/);\n  }\n} else {\n  tags = [];\n}\n\n// 3) Format each hashtag for email HTML and join with spaces\nconst formatted = tags\n  .filter(Boolean)\n  .map(t => {\n    const tag = String(t).trim();\n    if (!tag) return null;\n    return tag;\n  })\n  .filter(Boolean)\n  .join(' ');\n\n// 4) Build the final simple HTML\nconst html = `\n  <h3>Here are your images</h3>\n  ${imageUrl ? `<img src=\"${imageUrl}\" alt=\"image\" />` : ''}\n  ${videoUrl ? `<p>Video:</p><video controls src=\"${videoUrl}\" poster=\"${posterUrl}\" style=\"max-width:100%;height:auto;\"></video>` : ''}\n  <h3>Here are your assets:</h3>\n  <p>${formatted || '(No hashtags found)'}</p>\n`;\n\nreturn [{ json: { html } }];\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        5168,
+        -960
+      ],
+      "id": "d11d46b0-dcae-4785-bf93-3382f23cd69c",
+      "name": "Accumulator",
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert in image-based ad design, specializing in high-conversion social media ads, digital banners, and campaign visuals. Generate ONE concise, vivid, production-ready image prompt for the Flux Kontext model, based on the event brief.\n\nThe ad must be dynamic, conversion-focused, inclusive, and brand-aligned, optimized for global reach.\n\nInclude in the prompt:\n\nTheme & Mood (emotional tone)\nTypography (style, weight, exact text)\nColor Palette (brand-fit)\nLayout & Composition (hierarchy, focal point, CTA)\nVisual Elements (icons, effects, clear CTAs)\nText (short, correct spelling, exact phrases, use less text only statement texts)\nTarget Audience (digital-savvy, inclusive, mobile-first)\nPlatform Optimization (Instagram, TikTok/Reels, Web Banner)\nAd Psychology (urgency, scarcity, exclusivity, FOMO, trust)\n\nGenerate 3 Ads campiagn image prompts with different aspect ratios should be visually appealing and text should not overlap.\n\n# Output format 500 characters (Very important):\nRespond ONLY with valid JSON in this format:\n{\n    \"imagePrompts\": [\n        {\n            \"prompt\": \"<one apt detailed prompt that combines theme, style, colors, layout, audience, and platform variations into a single description make it for social media ads>\",\n            \"aspect_ratio\": \"9:16\"\n        }\n    ]\n}\n\n# Important Note: Don't add any existing company logo or name use given brief to generate one\n\nBrief:\n{{ $('Split Out').item.json.text }}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        3344,
+        -832
+      ],
+      "id": "99cb019b-ea46-4213-88e0-4491b457ef94",
+      "name": "AI Agent",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n    \"imagePrompts\": [\n        {\n            \"prompt\": \"California\",\n            \"aspect_ratio\": \"9:16\"\n        }\n    ]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        3488,
+        -608
+      ],
+      "id": "f47809c0-be18-4a9f-8bb4-ecf4d285cdbd",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3360,
+        -608
+      ],
+      "id": "accdd4f9-ce57-47f7-ad57-60536d7ed060",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZvZ6tKMeNdujT189",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Start FLUX Generation Job1').item.json.polling_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4144,
+        -832
+      ],
+      "id": "0c7aecaf-7ff2-4a03-9d02-f157c594a9a7",
+      "name": "Do the Polling1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "9FfQ7Vskhx7vzbiG",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d35ae158-063c-49e6-a13b-3c7fe086534f",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "=Ready",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4368,
+        -912
+      ],
+      "id": "ae05a936-fcff-4d4b-9021-72ad0979f0de",
+      "name": "Is it ready?1"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4592,
+        -736
+      ],
+      "id": "9b91a9d3-f529-42cf-a037-87cf99868544",
+      "name": "Wait1",
+      "webhookId": "6a3f00ce-00a8-4b32-9883-00c178d0630d"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.bfl.ai/v1/flux-kontext-pro",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ $json.prompt }}\n\n#Important Note: Dont add any time or extra text which is not asked keep the spellings correct\n"
+            },
+            {
+              "name": "aspect_ratio",
+              "value": "={{ $json.aspect_ratio }}"
+            },
+            {
+              "name": "prompt_upsampling",
+              "value": "false"
+            },
+            {
+              "name": "safety_tolerance",
+              "value": "6"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3920,
+        -832
+      ],
+      "id": "9f486185-8806-48a6-875b-674ba7b56705",
+      "name": "Start FLUX Generation Job1",
+      "executeOnce": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "9FfQ7Vskhx7vzbiG",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Image Generation\n",
+        "height": 624,
+        "width": 1536
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        3248,
+        -1088
+      ],
+      "typeVersion": 1,
+      "id": "1be6c3f6-507b-4815-a53b-196725116284",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.result.sample }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4592,
+        -960
+      ],
+      "id": "4a83319b-1b7c-45d4-b466-07a95f277fef",
+      "name": "Get Result"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output.imagePrompts",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        3696,
+        -832
+      ],
+      "id": "389beefd-2542-4c46-82db-8507ab47e96f",
+      "name": "Split Out2"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        -192
+      ],
+      "id": "5e2d9f26-ab84-4a62-b355-1a9ae82fcf1f",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZvZ6tKMeNdujT189",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Start FLUX Generation Job').item.json.polling_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        -528
+      ],
+      "id": "c4a715b6-f3af-49c8-b4cc-82af13942444",
+      "name": "Do the Polling",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "9FfQ7Vskhx7vzbiG",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.bfl.ai/v1/flux-kontext-pro",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ $json.visual_prompt }}"
+            },
+            {
+              "name": "aspect_ratio",
+              "value": "9:16"
+            },
+            {
+              "name": "prompt_upsampling",
+              "value": "false"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1776,
+        -528
+      ],
+      "id": "016c1c74-878e-4bf5-8051-500edc806813",
+      "name": "Start FLUX Generation Job",
+      "executeOnce": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "9FfQ7Vskhx7vzbiG",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2448,
+        -432
+      ],
+      "id": "ed0ae9db-5ef4-4dd9-88e3-e75c24e796ec",
+      "name": "Wait",
+      "webhookId": "b7b3b366-8210-4e20-883f-a959eeb6ee1b"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d35ae158-063c-49e6-a13b-3c7fe086534f",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "=Ready",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2224,
+        -592
+      ],
+      "id": "d1a24ff0-c91f-456c-93e2-d0313bca89dd",
+      "name": "Is it ready?"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2896,
+        -832
+      ],
+      "id": "b01ac0ea-6567-48a2-87a2-2b6142c3b942",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "images",
+        "options": {
+          "includeBinaries": true
+        }
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2672,
+        -640
+      ],
+      "id": "5786800b-d1b4-4a07-8f52-72658ac584e6",
+      "name": "Aggregate img"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "audio",
+        "options": {
+          "includeBinaries": true
+        }
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2672,
+        -1024
+      ],
+      "id": "3f045f9d-346a-43a4-a513-89889750423b",
+      "name": "Aggregate audio"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        2448,
+        -1024
+      ],
+      "id": "a0bbf914-6b9b-40af-a831-3a6223a3865a",
+      "name": "Extract audios"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9c0dc0de-cc18-4582-bee5-50033e590014",
+              "name": "img_url",
+              "value": "={{ $json.result.sample }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2448,
+        -640
+      ],
+      "id": "e534db2e-8d1a-4a91-8b7a-c11d36155ffb",
+      "name": "Edit img"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://video-stitch.vercel.app/stitch_base64",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "audio",
+              "value": "={{ $json.audio }}"
+            },
+            {
+              "name": "images",
+              "value": "={{ $json.images }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3120,
+        -832
+      ],
+      "id": "84ec69e7-9fd7-42ee-b022-2c1fd593dd92",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=<SystemPrompt>\n  <role>\n    You are a Video Scene Planner. Given topic, facts, goals, STYLE, a single global BACKGROUND, and LENGTH_SECONDS,\n    output a JSON array of scenes. Each scene object must have exactly three string fields:\n    narration_text, visual_prompt, on_screen_text. Output JSON only—no commentary.\n  </role>\n\n  <constraints_core>\n    - Always 2D, non-photoreal drawings. Never photorealism.\n    - Primary visual language: chalkboard-style or sketchbook-style drawings that visualize concepts clearly.\n    - Scenes should read like chalkboard/whiteboard explainer frames: lines, fills, labels, arrows, icons, simple characters, schematic diagrams.\n    - STYLE may vary (e.g., chalk drawing, cartoon, ghibli-inspired, marker sketch, watercolor wash, charcoal, ink outline), but must remain 2D and drawn on canvas.\n    - The visual_prompt must explicitly state \"treatment: drawn on canvas\", include the chosen STYLE verbatim, and a GLOBAL BACKGROUND of either \"pure white\" or \"pure black\".\n    - The scene should describe what is drawn on the canvas (subjects, diagrams, labels), not photographic scenes.\n    - No living-artist names. No photoreal celebrity faces. No real logos/trademarks or identifiable brands unless provided.\n    - Add an avoid: clause with safety and legibility constraints.\n  </constraints_core>\n\n  <user_context>\n    <style>{{ $json.style }}</style>\n    <background>{{ $json.background }}</background>\n    <duration_seconds>{{ $json.video_length }}</duration_seconds>\n  </user_context>\n\n  <overall>\n    PURPOSE: Produce concise voiceover lines and precise visual prompts for Black Forest Labs models.\n\n    IMAGERY: 2D, non-photoreal, “drawn on a canvas,” chalkboard/whiteboard explainer style:\n    - Clean, readable linework and shapes\n    - Simple shading or hatching\n    - Labels, arrows, callouts, icons\n    - Optional ghibli-inspired character silhouettes or props in a flat, stylized way (still 2D)\n    - Schematic diagrams, timelines, maps, flowcharts, process sketches\n\n    GLOBAL BACKGROUND: Must be identical for all scenes and exactly one of:\n    - \"background: pure white\"\n    - \"background: pure black\"\n    Choose high-contrast line/fill colors for readability against that background.\n\n    STYLE: Provided by user (e.g., chalk drawing, cartoon, ghibli-inspired 2D, marker sketch, watercolor wash, charcoal, ink outline).\n    Regardless of style, keep it explicitly 2D, non-photoreal, drawn on canvas.\n\n    SCENE COUNT RULE: scenes = ceil(LENGTH_SECONDS / 10); minimum 1 scene.\n    Example: 23s → 3 scenes; 60s → 6 scenes.\n\n    STRUCTURE: Start with a hook, then develop (problem → solution → result), and end with a crisp close or CTA if provided.\n\n    NARRATION: \n    - Clear, modern, concise\n    - Active voice, present tense\n    - One idea per sentence\n    - Varied rhythm\n    - No filler, clichés, unverifiable claims, or URLs\n\n    ON_SCREEN_TEXT:\n    - may be a headline\n - may be some short explanation. 1 -2 sentences maximum\n\n    VISUAL PROMPT (per scene) must include:\n    - Subject: what is drawn (e.g., flowchart of three boxes with arrows, character silhouette at a desk, simplified city map with labeled icons)\n    - Setting: minimalist hints (e.g., chalkboard grid, margin lines, tabbed dividers)\n    - Treatment: \"drawn on canvas\" and explicit STYLE reference\n    - Global Background: exactly the provided background string\n    - Line/brush quality: chalky, dry marker, ink, pencil, watercolor wash, etc.\n    - Lighting cue (stylistic): chalk bloom, soft vignette, paper grain highlight\n    - Mood\n    - Color palette chosen for high contrast against the GLOBAL BACKGROUND\n    - Camera/framing: e.g., medium shot, top-down, isometric, over-the-shoulder\n    - Composition: describe layout and focal points (grid, rule-of-thirds, central stack)\n    - Time-of-day if helpful (stylistic only)\n    - Materials/textures: chalk dust, paper grain, graphite hatch, ink bleed\n    - An avoid: clause (e.g., avoid: logos, trademarks, watermarks, unreadable microtext, gore, realistic brand UIs, photoreal rendering, living-artist names)\n\n    SAFETY: Corporate-safe by default. No real logos/trademarks or identifiable brands unless supplied. No living-artist names.\n\n    OUTPUT FORMAT: A single JSON array. Each item keys in order:\n      - narration_text\n      - visual_prompt\n      - on_screen_text\n    No extra keys, no markdown, no comments.\n  </overall>\n\n  <inputs>\n    Required: topic, key facts/bullets, STYLE, GLOBAL BACKGROUND (white or black), LENGTH_SECONDS.\n    Optional: audience, tone, CTA.\n  </inputs>\n\n  <constraints>\n    - Scene count = ceil(LENGTH_SECONDS / 10); minimum 1.\n    - narration_text and visual_prompt must be nonempty; on_screen_text may be \"\".\n    - visual_prompt must explicitly name STYLE and the GLOBAL BACKGROUND and include an avoid: clause.\n    - The GLOBAL BACKGROUND must be identical across all scenes; do not change it per scene.\n    - Language must be precise, imageable, and consistent with STYLE and GLOBAL BACKGROUND.\n    - Absolutely forbid photorealism; all imagery is 2D, drawn on canvas.\n  </constraints>\n\n  <example>\n    [\n      {\n        \"narration_text\": \"Too many tasks? Turn chaos into clear steps you can finish.\",\n        \"visual_prompt\": \"Subject: abstract task cards sketched as three boxes with arrows aligning into a neat vertical stack, each box labeled A, B, C in chalk; setting: minimalist chalkboard grid lines faintly visible; treatment: drawn on canvas, STYLE: chalk drawing; background: pure black (GLOBAL); line/brush: soft, dusty chalk strokes with light smudges; lighting cue: gentle chalk bloom around key lines; mood: hopeful, orderly; color palette: white lines with mint and cyan accents for high contrast on black; camera/framing: medium shot, centered with balanced negative space; composition: vertical flow chart converging to a checkmark; materials/textures: chalk dust, board grain; avoid: logos, trademarks, watermarks, unreadable microtext, realistic OS icons, photoreal rendering, living-artist names.\",\n        \"on_screen_text\": \"Clarity, fast\"\n      }\n    ]\n  </example>\n</SystemPrompt>"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1088,
+        -624
+      ],
+      "id": "02c535e4-98b4-452e-bbe7-1332501923ef",
+      "name": "AI Agent1",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n  \"$id\": \"https://example.com/schemas/video-scenes-3field.json\",\n  \"title\": \"Video Scenes (3-field minimal)\",\n  \"description\": \"An array of scenes for a video generation agent with narration, visual prompt, and on-screen text.\",\n  \"type\": \"array\",\n  \"minItems\": 1,\n  \"items\": {\n    \"type\": \"object\",\n    \"additionalProperties\": false,\n    \"required\": [\"narration_text\", \"visual_prompt\", \"on_screen_text\"],\n    \"properties\": {\n      \"narration_text\": {\n        \"type\": \"string\",\n        \"minLength\": 1,\n        \"description\": \"What the voiceover says for this scene.\"\n      },\n      \"visual_prompt\": {\n        \"type\": \"string\",\n        \"minLength\": 1,\n        \"description\": \"Detailed scene description for the image/video generator.\"\n      },\n      \"on_screen_text\": {\n        \"type\": \"string\",\n        \"minLength\": 1,\n        \"description\": \"Short text to render in the image. Use an empty string if none.\"\n      }\n    }\n  }\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1184,
+        -400
+      ],
+      "id": "d6e33327-d9ab-4e4f-b221-2cefba70cc14",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        -400
+      ],
+      "id": "225a7b73-4c83-4353-be9c-48b51f0046df",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZvZ6tKMeNdujT189",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1552,
+        -624
+      ],
+      "id": "2a330449-0ec2-4649-a432-ac88c68385ec",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "resource": "speech",
+        "voice": {
+          "__rl": true,
+          "value": "9BWtsMINqrJLrRacOk9x",
+          "mode": "list",
+          "cachedResultName": "Aria"
+        },
+        "text": "= {{ $json.narration_text }}",
+        "additionalOptions": {},
+        "requestOptions": {}
+      },
+      "type": "@elevenlabs/n8n-nodes-elevenlabs.elevenLabs",
+      "typeVersion": 1,
+      "position": [
+        2448,
+        -832
+      ],
+      "id": "8bf7736b-1bda-454f-bd5f-3ea31db28cc8",
+      "name": "Convert text to speech",
+      "executeOnce": false,
+      "credentials": {
+        "elevenLabsApi": {
+          "id": "JREVnmQYfR8rqMzY",
+          "name": "ElevenLabs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 3,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2224,
+        -880
+      ],
+      "id": "d28f9fc2-53cb-4cd3-8a68-4f7b69eaffdd",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "content": "## Video Generation\n",
+        "height": 1072,
+        "width": 2208
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1024,
+        -1088
+      ],
+      "typeVersion": 1,
+      "id": "4b1c801f-cb85-48f1-af5f-759adceedad9",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## SEO Generation\n",
+        "height": 624,
+        "width": 272
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4800,
+        -1088
+      ],
+      "typeVersion": 1,
+      "id": "c458bda9-9884-4e17-abbf-01f61894711f",
+      "name": "Sticky Note2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Calendar Trigger": {
+      "main": [
+        [
+          {
+            "node": "Generate Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Tasks": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SEO Manager": {
+      "main": [
+        [
+          {
+            "node": "Accumulator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Accumulator": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Split Out2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Do the Polling1": {
+      "main": [
+        [
+          {
+            "node": "Is it ready?1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is it ready?1": {
+      "main": [
+        [
+          {
+            "node": "Get Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Do the Polling1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start FLUX Generation Job1": {
+      "main": [
+        [
+          {
+            "node": "Do the Polling1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Result": {
+      "main": [
+        [
+          {
+            "node": "SEO Manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out2": {
+      "main": [
+        [
+          {
+            "node": "Start FLUX Generation Job1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Do the Polling": {
+      "main": [
+        [
+          {
+            "node": "Is it ready?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start FLUX Generation Job": {
+      "main": [
+        [
+          {
+            "node": "Do the Polling",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Do the Polling",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is it ready?": {
+      "main": [
+        [
+          {
+            "node": "Edit img",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate img": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Aggregate audio": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract audios": {
+      "main": [
+        [
+          {
+            "node": "Aggregate audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit img": {
+      "main": [
+        [
+          {
+            "node": "Aggregate img",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Start FLUX Generation Job",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert text to speech": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Extract audios",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Convert text to speech",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2c82215e-3013-4e91-bcb8-eacdb6ab722f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "86b1265ecd8e2a739872792faa8d5c82c2d86a502759fff97f572f20246e62ac"
+  },
+  "id": "YbOyEWLDQEmJdwPG",
+  "tags": []
+}
